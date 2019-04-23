@@ -37,19 +37,24 @@ define('CUSTOMCERT_DATE_COURSE_GRADE', '0');
 define('CUSTOMCERT_DATE_ISSUE', '-1');
 
 /**
+ * Date - Issue
+ */
+define('CUSTOMCERT_DATE_ISSUENEXTYEAR', '-2'); // RAS: Define new constant to hold next year's date
+
+/**
  * Date - Completion
  */
-define('CUSTOMCERT_DATE_COMPLETION', '-2');
+define('CUSTOMCERT_DATE_COMPLETION', '-3');
 
 /**
  * Date - Course start
  */
-define('CUSTOMCERT_DATE_COURSE_START', '-3');
+define('CUSTOMCERT_DATE_COURSE_START', '-4');
 
 /**
  * Date - Course end
  */
-define('CUSTOMCERT_DATE_COURSE_END', '-4');
+define('CUSTOMCERT_DATE_COURSE_END', '-5');
 
 require_once($CFG->dirroot . '/lib/grade/constants.php');
 
@@ -73,6 +78,7 @@ class element extends \mod_customcert\element {
         // Get the possible date options.
         $dateoptions = array();
         $dateoptions[CUSTOMCERT_DATE_ISSUE] = get_string('issueddate', 'customcertelement_date');
+        $dateoptions[CUSTOMCERT_DATE_ISSUENEXTYEAR] = get_string('issueddate', 'customcertelement_date') . " +1 year"; // RAS: Add ISSUENEXTYEAR that is a year from the date of issue
         $completionenabled = $CFG->enablecompletion && ($COURSE->id == SITEID || $COURSE->enablecompletion);
         if ($completionenabled) {
             $dateoptions[CUSTOMCERT_DATE_COMPLETION] = get_string('completiondate', 'customcertelement_date');
@@ -133,7 +139,11 @@ class element extends \mod_customcert\element {
 
         // If we are previewing this certificate then just show a demonstration date.
         if ($preview) {
-            $date = time();
+            if ($dateitem == CUSTOMCERT_DATE_ISSUENEXTYEAR) {  // RAS: Add ISSUENEXTYEAR preview that is a year from the date of issue
+                $date = strtotime('+1 year');
+            } else {
+                $date = time();
+            }
         } else {
             // Get the page.
             $page = $DB->get_record('customcert_pages', array('id' => $this->get_pageid()), '*', MUST_EXIST);
@@ -145,6 +155,8 @@ class element extends \mod_customcert\element {
 
             if ($dateitem == CUSTOMCERT_DATE_ISSUE) {
                 $date = $issue->timecreated;
+            } else if ($datetime = CUSTOMCERT_DATE_ISSUENEXTYEAR) { // RAS: Add ISSUENEXTYEAR that is a year from the date of issue
+                $date = strtotime( '+1 year', $issue->timecreated );
             } else if ($dateitem == CUSTOMCERT_DATE_COMPLETION) {
                 // Get the last completion date.
                 $sql = "SELECT MAX(c.timecompleted) as timecompleted
